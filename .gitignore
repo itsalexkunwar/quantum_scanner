@@ -1,0 +1,12 @@
+.DS_Store
+__pycache__
+*.pyc
+
+# Old milestone scratch folders (local only)
+ms_0/
+ms_1_exit/
+ms_1_testnoise/
+ms_1_verifyimports/
+ms_1_verifyimports(1)/
+ms_2_testscan
+
