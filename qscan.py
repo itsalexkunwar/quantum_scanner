@@ -213,35 +213,112 @@ def dedupe_findings(findings: Iterable[Finding]) -> list[Finding]:
     return list(unique.values())
 
 
-def summarize(findings: Iterable[Finding]) -> dict[str, int]:
-    counts: dict[str, int] = {}
-    for f in findings:
-        counts[f.kind] = counts.get(f.kind, 0) + 1
-    return counts
-
 BROKEN_KINDS = {"broken_now", "obsolete_now"}
+OUTPUT_CATEGORY_ORDER = ["broken", "obsolete_tls", "quantum_vulnerable", "import"]
+
+def kind_to_category(kind: str) -> str:
+    if kind == "broken_now":
+        return "broken"
+    if kind == "obsolete_now":
+        return "obsolete_tls"
+    if kind == "quantum_vulnerable":
+        return "quantum_vulnerable"
+    if kind in ("import", "import_from"):
+        return "import"
+    return "import"
 
 def has_blocking(findings: Iterable[Finding]) -> int:
-    blocking_kinds = {"broken_now", "obsolete_now"}
     for f in findings:
         if f.kind in BROKEN_KINDS:
             return 1
     return 0
 
 
-def findings_to_json(findings: list[Finding]) -> list[dict]:
-    out: list[dict] = []
+
+def build_report(root: str, files: list[str], findings: list[Finding], exit_code: int) -> dict:
+    counts_by_category = {k: 0 for k in OUTPUT_CATEGORY_ORDER}
     for f in findings:
-        out.append(
+        cat = kind_to_category(f.kind)
+        if cat in counts_by_category:
+            counts_by_category[cat] += 1
+
+    report = {
+        "schema_version": "1.0",
+        "tool": {
+            "name": "qscan",
+            "version": "0.0.0",
+        },
+        "target": {
+            "path": root,
+        },
+        "summary": {
+            "counts_by_category": counts_by_category,
+            "findings_total": len(findings),
+            "exit_code": exit_code,
+        },
+        "stats": {
+            "python_files_scanned": len(files),
+        },
+        "findings": [
             {
                 "file_path": f.file_path,
                 "line_number": f.line_number,
+                "category": kind_to_category(f.kind),
                 "kind": f.kind,
                 "match": f.match,
                 "message": f.message,
             }
-        )
-    return out
+            for f in findings
+        ],
+    }
+    return report
+
+
+def render_json(report: dict) -> str:
+    return json.dumps(report, indent=2, sort_keys=True)
+
+
+def render_text(report: dict) -> str:
+    lines: list[str] = []
+    lines.append("Cryptography Inventory and Quantum Readiness Scanner")
+    lines.append(f"Target: {report['target']['path']}")
+    lines.append(f"Python files scanned: {report['stats']['python_files_scanned']}")
+    lines.append(f"Findings: {report['summary']['findings_total']}")
+    lines.append("")
+    lines.append("Summary")
+    counts = report["summary"]["counts_by_category"]
+    lines.append(f"  Broken: {counts['broken']}")
+    lines.append(f"  Obsolete TLS: {counts['obsolete_tls']}")
+    lines.append(f"  Quantum vulnerable: {counts['quantum_vulnerable']}")
+    lines.append(f"  Imports: {counts['import']}")
+    lines.append("")
+    lines.append(f"Exit code: {report['summary']['exit_code']}")
+    lines.append("")
+
+    findings = report["findings"]
+    if not findings:
+        lines.append("No crypto related findings found.")
+        return "\n".join(lines)
+
+    lines.append("Findings")
+    lines.append("")
+
+    current_file: Optional[str] = None
+    for item in findings:
+        fp = item["file_path"]
+        if fp != current_file:
+            if current_file is not None:
+                lines.append("")
+            lines.append(fp)
+            current_file = fp
+
+        line_no = item["line_number"]
+        cat = item["category"]
+        match = item["match"]
+        msg = item["message"]
+        lines.append(f"  L{line_no}  {cat}  {match}  {msg}")
+
+    return "\n".join(lines)
 
 
 def main() -> int:
@@ -279,40 +356,21 @@ def main() -> int:
     unique_findings = dedupe_findings(all_findings)
     unique_findings.sort(key=lambda x: (x.file_path, x.line_number, x.kind, x.match))
 
-    if args.json_output:
-        payload = {
-            "root": root,
-            "file_count": len(files),
-            "finding_count": len(unique_findings),
-            "summary": summarize(unique_findings),
-            "findings": findings_to_json(unique_findings),
-        }
-        print(json.dumps(payload, indent=2))
-        return 1 if has_blocking(unique_findings) else 0
-
-    if not unique_findings:
-        print("No crypto related findings found.")
-        return 0
-
-    counts = summarize(unique_findings)
+    exit_code = 1 if has_blocking(unique_findings) else 0
     
-    total_from_summary = sum(counts.values())
-    if total_from_summary != len(unique_findings):
+    report = build_report(root, files, unique_findings, exit_code)
+
+    total_from_summary = sum(report["summary"]["counts_by_category"].values())
+    if total_from_summary != report["summary"]["findings_total"]:
         print("Internal error: summary does not match findings")
         return 2
 
-    print("Summary")
-    for k in sorted(counts.keys()):
-        print(f"  {k}: {counts[k]}")
-    print()
-    print(f"Scanned files: {len(files)}")
-    print(f"Findings: {len(unique_findings)}")
-    print()
+    if args.json_output:
+        print(render_json(report))
+        return exit_code
 
-    for f in unique_findings:
-        print(f"{f.file_path}:{f.line_number} [{f.kind}] {f.match} -> {f.message}")
-
-    return 1 if has_blocking(unique_findings) else 0
+    print(render_text(report))
+    return exit_code
 
 if __name__ == "__main__":
     raise SystemExit(main())
