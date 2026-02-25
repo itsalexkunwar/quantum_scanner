@@ -86,6 +86,7 @@ Findings should be treated as indicators for review rather than proof of exploit
 
 ### Human Output
 
+```
 Cryptography Inventory and Quantum Readiness Scanner
 Target: /Users/Quantum/mvp/ms_0
 Python files scanned: 1
@@ -108,9 +109,11 @@ Findings
   L6  broken  hashlib.md5  MD5 is broken and should not be used for security purposes.
   L9  obsolete_tls  ssl.PROTOCOL_TLSv1  TLS 1.0 is obsolete and should not be used.
   L13  quantum_vulnerable  cryptography.hazmat.primitives.asymmetric.rsa.generate_private_key  RSA is vulnerable to future quantum attacks. Plan migration to PQC.
+```
 
 ### JSON Output
 
+```
 {
   "schema_version": "1.0",
   "summary": {
@@ -166,6 +169,7 @@ Findings
     }
   ]
 }
+```
 
 ## License
 
