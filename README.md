@@ -26,25 +26,31 @@ The tool produces deterministic, stable, and machine readable output suitable fo
 
 ## Quick Start
 
-Clone the repository:
+### 1. Clone the repository
 
+```bash
 git clone https://github.com/itsalexkunwar/quantum_scanner.git
 cd quantum_scanner
+```
 
-Create a virtual environment and activate it:
+### 2. Create and activate a virtual environment
 
+```bash
 python -m venv venv
 source venv/bin/activate
+```
 
-Run a scan:
+### 3. Run a scan
 
+```bash
 python qscan.py path_to_scan
+```
 
-Run in JSON mode:
+### 4. Run in JSON mode
 
+```bash
 python qscan.py path_to_scan --json
-
-Adjust the JSON flag if your CLI uses a different option.
+```
 
 ## Supported Scope
 
