@@ -114,14 +114,38 @@ Findings
 {
   "schema_version": "1.0",
   "summary": {
-    "files_scanned": 3,
-    "findings": 2
+    "files_scanned": 1,
+    "findings": 6,
+    "broken": 1,
+    "obsolete_tls": 1,
+    "quantum_vulnerable": 1,
+    "imports": 3
   },
   "findings": [
     {
+      "category": "import",
+      "file_path": "/Users/Quantum/mvp/ms_0/sample.py",
+      "line_number": 1,
+      "match": "hashlib",
+      "message": "Imports cryptography related module."
+    },
+    {
+      "category": "import",
+      "file_path": "/Users/Quantum/mvp/ms_0/sample.py",
+      "line_number": 2,
+      "match": "ssl",
+      "message": "Imports cryptography related module."
+    },
+    {
+      "category": "import",
+      "file_path": "/Users/Quantum/mvp/ms_0/sample.py",
+      "line_number": 3,
+      "match": "cryptography.hazmat.primitives.asymmetric.rsa",
+      "message": "Imports cryptography related symbol."
+    },
+    {
       "category": "broken",
       "file_path": "/Users/Quantum/mvp/ms_0/sample.py",
-      "kind": "broken_now",
       "line_number": 6,
       "match": "hashlib.md5",
       "message": "MD5 is broken and should not be used for security purposes."
@@ -129,7 +153,6 @@ Findings
     {
       "category": "obsolete_tls",
       "file_path": "/Users/Quantum/mvp/ms_0/sample.py",
-      "kind": "obsolete_now",
       "line_number": 9,
       "match": "ssl.PROTOCOL_TLSv1",
       "message": "TLS 1.0 is obsolete and should not be used."
@@ -137,7 +160,6 @@ Findings
     {
       "category": "quantum_vulnerable",
       "file_path": "/Users/Quantum/mvp/ms_0/sample.py",
-      "kind": "quantum_vulnerable",
       "line_number": 13,
       "match": "cryptography.hazmat.primitives.asymmetric.rsa.generate_private_key",
       "message": "RSA is vulnerable to future quantum attacks. Plan migration to PQC."
